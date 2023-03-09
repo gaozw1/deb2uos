@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#记录是否报错
+ERRORSIGNL=0
+
 #解压包
 function extract {
   
@@ -56,14 +59,15 @@ function cutStr {
   elif [ x$Arch = x"ARM" ];then
     arch="arm64"
   else 
-  	echo "无此架构"
-    errorLog $deb
+  	echo "Err: 无此架构"
+    errorLog $deb"  无此架构"
+    ERRORSIGNL=1
   fi
-  printLog $fileName
-  printLog $appName
-  printLog $packageName
-  printLog $version
-  printLog $arch
+  printLog ">fileName: "$fileName
+  printLog ">appName: "$appName
+  printLog ">packageName: "$packageName
+  printLog ">version: "$version
+  printLog ">arch: "$arch
 }
 
 function copySourceFile {
@@ -71,26 +75,64 @@ function copySourceFile {
   find ./src/$1-$2/ -name "icons"  |xargs -i cp -r {} $entriesPath
   mkdir $filesPath/files
   cp -r `ls -d ./src/$1-$2/* |grep -v DEBIAN|grep -v opt-tmp` $filesPath/files
-  rm -rf ./src/$1-$2/opt ./src/$1-$2/bin
+  #清除多余文件
+  rm -rf ./src/$1-$2/opt ./src/$1-$2/bin ./src/$1-$2/usr/bin ./src/$1-$2/usr/lib
   mv ./src/$1-$2/opt-tmp ./src/$1-$2/opt
 }
 
 function modifyName {
   sed -i "/.*Package:\ */c\Package: $1" src/$1-$2-$3/DEBIAN/control
   sed -i "/.*Architecture:\ */c\Architecture: $3" src/$1-$2-$3/DEBIAN/control
-  for desktopFile in `find ./src/$1-$2-$3/opt/apps/$1/entries/applications/ -name "*.desktop"`
-  do
-    echo $desktopFile
-    execPath=`cat $desktopFile |grep Exec |awk -F" " '{print $1}'|awk -F= '{print $2}'|uniq`
-    execFileName=`echo ${execPath##*/} |tr -d '"'`
-    newExecPath="/opt/apps"`find ./src/$1-$2-$3/opt/apps/$1/files -type f -name "$execFileName" |awk -F"opt/apps" '{print $2}'`
-    echo "execPath:"$execPath
-    echo "execFileName:"$execFileName
-    echo "newExecPath:"$newExecPath
-    # exit 0
-    sed -i "/.*Exec=*/c\Exec=$newExecPath"  $desktopFile
-  done
+  if [[ -n `find ./src/$1-$2-$3/opt/apps/$1/entries/ -name "*.desktop"` ]];then
+  desktopFile=""
+    execPath=""
+    execFileName=""
+    newExecPath=""
+    for desktopFile in `find ./src/$1-$2-$3/opt/apps/$1/entries/applications/ -name "*.desktop"`
+    do
+      execPath=`cat $desktopFile |grep Exec |awk -F" " '{print $1}'|awk -F= '{print $2}'|uniq`
+      iconPath=`cat $desktopFile |grep Icon|awk -F= '{print $2}'|uniq`
+      printLog "iconPath:"$iconPath
+      if [[ -n `echo $iconPath |grep /` ]];then
+        newIconPath="/opt/apps/$1/files"$iconPath
+        sed -i "/.*Icon=*/c\Icon=$newIconPath"  $desktopFile
+        printLog "newIconPath: $newIconPath"
+      fi
+      execFileName=`echo ${execPath##*/} |tr -d '"'`
+      find ./src/$1-$2-$3/opt/apps/$1/files -type f -name "$execFileName"| while read exe
+      do
+      printLog "exe: "$exe
+        #判断可执行文件路径，若文件类型为ELF，或在files/usr/bin目录下，则默认是可执行文件
+        if [[ -n `echo $exe|xargs -i file {} |grep ELF` ]] || [[ -n `echo $exe|grep "/files/usr/bin/"` ]];then
+          echo "/opt/apps"`echo $exe |awk -F"opt/apps" '{print $2}'` > .newExecPath
+          break
+        fi
+      done
+      newExecPath=`cat .newExecPath`
+      rm .newExecPath
+      # echo "execPath:"$execPath
+      # echo "execFileName:"$execFileName
+      # echo "newExecPath:"$newExecPath
+      
+      printLog "execPath:"$execPath
+      printLog "execFileName:"$execFileName
+      printLog "newExecPath:"$newExecPath
+      if [ x$newExecPath = x"" ];then
+        echo "Err: 可执行文件路径为空"
+        printLog $deb" 可执行文件路径为空"
+        ERRORSIGNL=1
+      else
+      sed -i "/.*Exec=*/c\Exec=$newExecPath"  $desktopFile
+      fi
+    done
+    
+  else
+    echo "Err: 缺少desktop文件"
+    errorLog "$deb  无desktop文件"
+    ERRORSIGNL=1
+  fi
 }
+
 
 function printLog {
   echo $1 >> log.txt
@@ -104,30 +146,58 @@ function main {
   
   for deb in `ls inputs`
   do 
+    ERRORSIGNL=0
     printLog "----------"
     printLog $deb
+    echo "-------"
     echo $deb
     printLog "[0%]start!"
     printLog "[10%]cutStr"
     cutStr $deb
+    if [ $ERRORSIGNL = 1 ];then
+      printLog "cutStr error"
+      continue
+    fi
     printLog "[20%]extract"
     extract $deb $packageName-$version-$arch
+    if [ $ERRORSIGNL = 1 ];then
+      printLog "extract error"
+      continue
+    fi
     printLog "[40%]initDir"
     initDir $appName $packageName $version $arch
+    if [ $ERRORSIGNL = 1 ];then
+      printLog "initDir error"
+      continue
+    fi
     printLog "[60%]copySourceFile"
     copySourceFile $packageName-$version $arch
+    if [ $ERRORSIGNL = 1 ];then
+      printLog "copySourceFile error"
+      continue
+    fi
     printLog "[80%]modifyName"
     modifyName $packageName $version $arch
+    if [ $ERRORSIGNL = 1 ];then
+      printLog "modifyName error"
+      continue
+    fi
     printLog "[90%]build"
     build $packageName $version $arch $Arch 
+    if [ $ERRORSIGNL = 1 ];then
+      printLog "build error"
+      continue
+    fi
     printLog "[100%]Finished!"
+    echo "[OK]"
   done
   
 }
 
 if [ x$1 = x"build" ];then
+  echo "###### Start！######"
   main
-  echo "Finished！"
+  echo "###### Finish！######"
 else 
   rm -rf src/* outputs/* log.txt error.txt
   echo "已清理完成"
