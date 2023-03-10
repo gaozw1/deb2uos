@@ -1,0 +1,10 @@
+fileName: 0ad_com.play0ad.0ad_0.0.23.1-2_amd64.deb
+http://ftp.us.debian.org/debian/pool/main/0/0ad/0ad_0.0.23.1-2_amd64.deb
+fileName: 2048-qt_com.github.2048-qt_0.1.6-1+b1_amd64.deb
+http://ftp.us.debian.org/debian/pool/main/2/2048-qt/2048-qt_0.1.6-1+b1_amd64.deb
+fileName: 2048-qt_com.github.2048-qt_0.1.6-1+b1_arm64.deb
+http://ftp.us.debian.org/debian/pool/main/2/2048-qt/2048-qt_0.1.6-1+b1_arm64.deb
+fileName: 3dchess_edu.unc.sunsite.3dchess_0.8.1-20_amd64.deb
+http://ftp.us.debian.org/debian/pool/main/3/3dchess/3dchess_0.8.1-20_amd64.deb
+fileName: 3dchess_edu.unc.sunsite.3dchess_0.8.1-20_arm64.deb
+http://ftp.us.debian.org/debian/pool/main/3/3dchess/3dchess_0.8.1-20_arm64.deb

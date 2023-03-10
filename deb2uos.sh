@@ -53,11 +53,11 @@ function cutStr {
   appName=`echo $fileName |awk -F_ '{print $1}'`
   packageName=`echo $fileName |awk -F_ '{print $2}'`
   version=`echo $fileName |awk -F_ '{print $3}'`
-  Arch=`echo $fileName |awk -F_ '{print $4}'`
-  if [ x$Arch = x"X86" ];then
-    arch="amd64"
-  elif [ x$Arch = x"ARM" ];then
-    arch="arm64"
+  arch=`echo $fileName |awk -F_ '{print $4}'`
+  if [ x$arch = x"amd64" ];then
+    Arch="X86"
+  elif [ x$arch = x"arm" ] || [ x$arch = x"arm64" ];then
+    Arch="ARM"
   else 
   	echo "Err: 无此架构"
     errorLog $deb"  无此架构"
@@ -84,12 +84,15 @@ function modifyName {
   sed -i "/.*Package:\ */c\Package: $1" src/$1-$2-$3/DEBIAN/control
   sed -i "/.*Architecture:\ */c\Architecture: $3" src/$1-$2-$3/DEBIAN/control
   if [[ -n `find ./src/$1-$2-$3/opt/apps/$1/entries/ -name "*.desktop"` ]];then
-  desktopFile=""
+    desktopFile=""
     execPath=""
     execFileName=""
     newExecPath=""
+    #可能有多个desktop文件
     for desktopFile in `find ./src/$1-$2-$3/opt/apps/$1/entries/applications/ -name "*.desktop"`
     do
+    echo $desktopFile
+      #可能有多组[Desktop Entry]，因此会有多个Exec
       execPath=`cat $desktopFile |grep Exec |awk -F" " '{print $1}'|awk -F= '{print $2}'|uniq`
       iconPath=`cat $desktopFile |grep Icon|awk -F= '{print $2}'|uniq`
       printLog "iconPath:"$iconPath
@@ -103,7 +106,8 @@ function modifyName {
       do
       printLog "exe: "$exe
         #判断可执行文件路径，若文件类型为ELF，或在files/usr/bin目录下，则默认是可执行文件
-        if [[ -n `echo $exe|xargs -i file {} |grep ELF` ]] || [[ -n `echo $exe|grep "/files/usr/bin/"` ]];then
+        if [[ -n `echo $exe|xargs -i file {} |grep ELF` ]] || [[ -n `echo $exe|grep "/files/usr/bin/"` ]] || [[ -n `echo $exe|grep "/files/usr/games"` ]]
+          then
           echo "/opt/apps"`echo $exe |awk -F"opt/apps" '{print $2}'` > .newExecPath
           break
         fi
@@ -176,6 +180,7 @@ function main {
       printLog "copySourceFile error"
       continue
     fi
+    # exit 0
     printLog "[80%]modifyName"
     modifyName $packageName $version $arch
     if [ $ERRORSIGNL = 1 ];then

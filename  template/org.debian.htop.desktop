@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=name
+Comment=Htop is a cross-platform interactive process viewer.
+Exec=/opt/apps/org.debian.htop/files/bin/htop
+Terminal=true
+Type=Application
+Icon=/opt/apps/org.debian.htop/entries/icons/htop.svg
+Categories=System;
