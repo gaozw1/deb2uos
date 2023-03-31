@@ -1,0 +1,11 @@
+./D2U/inputs/*.deb
+./D2U/outputs/*.deb
+./D2U/src/*
+!./D2U/src/.gitkeep
+./D2U/*.txt
+./D2U/bak
+
+./debCrawler/*.xlsx
+!./debCrawler/appStore_1678695568532.xlsx
+./debCrawler/*.txt
+test
