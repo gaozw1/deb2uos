@@ -6,7 +6,6 @@
 ├── debCrawler      收集[https://packages.debian.org/buster/]此站点下的deb包
 ├── README.md
 ├── Snap2Deb        暂未实现。将Ubuntu下的snap包转换成UOS下的deb包
-├── snapcraft       暂不考虑实现，已有现成“轮子”。抓取snapcraft站点下的网址
 └── test            编码中用于测试问题模块
 ```
 ## D2U 
