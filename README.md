@@ -32,7 +32,8 @@
 爬取指定页面的deb包内容以及下载链接。可以在  
 
 使用方法
-`./venv/bin/python3.7 getDebianDeb.py`
+1. 配置`typelist.list`中，需要爬取的包类型
+2. 执行`./venv/bin/python3.7 getDebianDeb.py`
 
 注意：重新爬取数据之前建议手动删除
 `downloadLinkData.txt`
